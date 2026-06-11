@@ -560,6 +560,16 @@
   .site-bar.line { width: 90%; background: rgba(255,255,255,0.08); }
   .site-bar.img-placeholder { height: 50px; width: 100%; background: rgba(255,255,255,0.06); border-radius: 4px; margin-top: 4px; }
 
+  .site-gif {
+    position: absolute;
+    top: 28px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 28px);
+    object-fit: cover;
+    display: block;
+  }
+
   /* different color schemes per card */
   .site-card:nth-child(1) .site-bar.title { background: rgba(245,196,0,0.6); }
   .site-card:nth-child(2) .site-bar.title { background: rgba(107,33,168,0.6); }
@@ -1092,19 +1102,12 @@
   <div class="websites-scroll">
     <!-- Card 1 -->
     <div class="site-card">
-      <div class="site-card-inner" style="background:#1a1200;">
+      <div class="site-card-inner" style="background:#1a1200; padding:0;">
         <div class="site-browser-bar">
           <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <div class="site-url">nissan-mauritius.com</div>
+          <div class="site-url">nissan.mu</div>
         </div>
-        <div class="site-visual">
-          <div class="site-bar title"></div>
-          <div class="site-bar sub"></div>
-          <div class="site-bar short"></div>
-          <div class="site-bar img-placeholder"></div>
-          <div class="site-bar line"></div>
-          <div class="site-bar short"></div>
-        </div>
+        <img src="gifs/nissan.gif" class="site-gif" alt="Nissan Mauritius">
       </div>
       <div class="site-overlay">
         <div class="site-overlay-name">Nissan</div>
@@ -1114,18 +1117,12 @@
 
     <!-- Card 2 -->
     <div class="site-card">
-      <div class="site-card-inner" style="background:#110a1a;">
+      <div class="site-card-inner" style="background:#110a1a; padding:0;">
         <div class="site-browser-bar">
           <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <div class="site-url">home-avenue.mu</div>
+          <div class="site-url">home-avenue-ltd.vercel.app</div>
         </div>
-        <div class="site-visual">
-          <div class="site-bar title"></div>
-          <div class="site-bar sub"></div>
-          <div class="site-bar img-placeholder"></div>
-          <div class="site-bar short"></div>
-          <div class="site-bar line"></div>
-        </div>
+        <img src="gifs/home-avenue.gif" class="site-gif" alt="Home Avenue">
       </div>
       <div class="site-overlay">
         <div class="site-overlay-name">Home Avenue</div>
@@ -1156,18 +1153,12 @@
 
     <!-- Card 4 -->
     <div class="site-card">
-      <div class="site-card-inner" style="background:#1a0a0a;">
+      <div class="site-card-inner" style="background:#1a0a0a; padding:0;">
         <div class="site-browser-bar">
           <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <div class="site-url">urban-mu.com</div>
+          <div class="site-url">urbanhome.mu</div>
         </div>
-        <div class="site-visual">
-          <div class="site-bar title"></div>
-          <div class="site-bar img-placeholder"></div>
-          <div class="site-bar sub"></div>
-          <div class="site-bar short"></div>
-          <div class="site-bar line"></div>
-        </div>
+        <img src="gifs/urban.gif" class="site-gif" alt="Urban Home">
       </div>
       <div class="site-overlay">
         <div class="site-overlay-name">Urban</div>
