@@ -45,6 +45,10 @@ module.exports = async (req, res) => {
             emails: { items: [{ email, tag: 'MAIN' }] },
             ...(phone ? { phones: { items: [{ phone, tag: 'MAIN' }] } } : {}),
             ...(company ? { company } : {}),
+            // Tag every booking-form lead with the "Website Lead" label so a Wix
+            // automation ("Label added to contact" → send email) can notify the
+            // team on each new lead. Label key provisioned on the Wix site.
+            labelKeys: { items: ['custom.website-lead'] },
             extendedFields: {
               // Key is provisioned on the Wix "Tropik Media" project (Wix appends a
               // unique suffix to custom-field keys). See backend/backend-spec.md.
