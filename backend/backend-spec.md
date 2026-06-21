@@ -1,64 +1,93 @@
-# Tropik Media — Wix Headless Backend Contract
+# Wix Integration Reference
 
-Authoritative contract between the Wix backend and the **static** Tropik Media site
-(plain HTML on Vercel). The frontend integrates **server-side**: Vercel functions in
-`api/*.js` call the Wix REST API with a server-side API key. The browser never talks to
-Wix directly, so there is **no public OAuth client / `VITE_WIX_CLIENT_ID`**.
+How the static Tropik Media site (plain HTML on Vercel) talks to Wix.
 
-> Adapted from the Wix Backend Agent protocol for this repo's no-build static stack.
-> Provisioning was grounded in live Wix MCP docs; the two human gates were honoured.
+The site is **static** and has **no build step**. The two dynamic features — the blog
+and the booking form — are powered by Wix and reached through two small server-side
+functions in `api/`. The browser never calls Wix directly; the Wix admin API key lives
+only on the server, so it is never exposed to visitors.
 
-## 0. Status
+```
+Visitor ──▶ blog.html / book.html ──▶ /api/posts, /api/lead (Vercel functions)
+                                          │  Authorization: WIX_API_KEY
+                                          ▼
+                                    Wix REST API  (Blog + CRM Contacts)
+```
 
-- **Wix project:** `Tropik Media`
-- **Site ID:** `a895c48f-6677-4005-994f-aa58f23d2206`  → this is `WIX_SITE_ID`
-- **Editor / dashboard:** https://editor.wix.com/edit/od/9070e40e-dd83-4a0d-9442-86e3e98a64fd?metaSiteId=a895c48f-6677-4005-994f-aa58f23d2206
-- **Wix preview URL:** https://yadav360.wixsite.com/tropik-media (the public site stays on Vercel; this Wix site is the content backend / dashboard)
-- **Backend mode:** Wix **Blog** (client-authored posts) + **CRM Contacts** (booking form). No CMS collections, no Stores.
-- **Auth:** API key in `Authorization` header + `wix-site-id: <WIX_SITE_ID>` header (Wix "Make API Calls with an API Key").
-- **`BACKEND-READY`:** NO — pending `WIX_API_KEY` (dashboard-only; see §6). Everything else is provisioned and verified.
+## Wix project
 
-## 1. Provisioned entities (live)
+| | |
+|---|---|
+| **Project name** | `Tropik Media` |
+| **Site ID** (`WIX_SITE_ID`) | `a895c48f-6677-4005-994f-aa58f23d2206` |
+| **Dashboard / editor** | https://editor.wix.com/edit/od/9070e40e-dd83-4a0d-9442-86e3e98a64fd?metaSiteId=a895c48f-6677-4005-994f-aa58f23d2206 |
+| **Wix preview URL** | https://yadav360.wixsite.com/tropik-media |
 
-| Entity | Detail | Permissions / scope used at runtime |
+The public site runs on Vercel at `tropikmedialtd.com`. The Wix project is used purely
+as the **content backend**: you log into the Wix dashboard to write blog posts and to see
+incoming leads. The `Site ID` is not secret; the API key is.
+
+## What's set up in Wix
+
+| Entity | Detail | Scope used at runtime |
 |---|---|---|
-| **Wix Blog** app | Installed. **1 published post** seeded — `Welcome to the Tropik Media Blog` (slug `welcome-to-the-tropik-media-blog`, id `2010b095-22dc-4ec2-995a-018d9f883e8f`). Starter content in the agency's own voice — client edits/deletes in the dashboard. | `BLOG.READ-PUBLICATION` (read) |
-| **CRM / Contacts** | Built in; ready to receive leads from the booking form. | `CONTACTS.MODIFY` (create) |
-| **Contact extended field** | `Project Details` (TEXT). **Key = `custom.project-details-kcttddyvagvlqryswyt`** (Wix appended a suffix — use this exact key). | written on contact create |
+| **Blog** app | Installed. One published starter post — *"Welcome to the Tropik Media Blog"* (slug `welcome-to-the-tropik-media-blog`). Edit or delete it in the dashboard and add your own. | Read Blog (`BLOG.READ-PUBLICATION`) |
+| **CRM / Contacts** | Built in. Receives leads from the booking form. | Manage Contacts (`CONTACTS.MODIFY`) |
+| **Contact field** `Project Details` (text) | Stores the booking form's message. Key: `custom.project-details-kcttddyvagvlqryswyt` (Wix adds a unique suffix — use this exact key). | written on contact create |
 
-## 2. Frontend wiring — per dynamic feature
+## How each feature is wired
 
-### Blog (NEW `/blog` listing + `/blog/<slug>` post)
-- **List published posts** — `GET https://www.wixapis.com/blog/v3/posts?paging.limit=<n>&fieldsets=URL`
-  - Returns `{ posts: [...], metaData: { total } }`. Each post: `id`, `title`, `excerpt`, `slug`, `firstPublishedDate`, `minutesToRead`, `media` (cover; `wixMedia.image` when a cover image is set), `url { base, path }`.
-- **One post by slug** — `GET https://www.wixapis.com/blog/v3/posts/slugs/{slug}?fieldsets=URL&fieldsets=RICH_CONTENT`
-  - Returns `{ post: { ... , richContent: { nodes: [...] } } }`. `richContent` is **Ricos** node format (PARAGRAPH/HEADING/TEXT with decorations/IMAGE/lists). The proxy renders nodes → HTML.
-- **States to render:** loading · empty (no posts yet → styled empty state) · success · error (502 from Wix → friendly retry message).
-- **Served by:** `api/posts.js` (server-side proxy holding the key). Frontend calls `/api/posts` (list) and `/api/posts?slug=<slug>` (single).
+### Blog — `/blog` listing and `/blog/<slug>` post
+Served by `api/posts.js`, which holds the API key server-side and returns clean JSON:
 
-### Booking form (`book.html` → `api/lead.js`)
-- **Create contact** — `POST https://www.wixapis.com/contacts/v4/contacts`
-  - Body: `{ info: { name:{first,last}, emails:{items:[{email,tag:"MAIN"}]}, phones?, company?, extendedFields:{ items:{ "custom.project-details-kcttddyvagvlqryswyt": <message> } } } }`
-  - ⚠️ The existing `api/lead.js` uses the key `custom.project-details` — **update it to `custom.project-details-kcttddyvagvlqryswyt`** (the real provisioned key) or the message won't persist.
-- **States:** success (contact created → confirmation) · 400 (validation) · 502 (Wix unreachable).
+- `GET /api/posts` → `{ posts: [ { title, slug, excerpt, date, minutesToRead, coverImage } ] }`
+- `GET /api/posts?slug=<slug>` → `{ post: { …, html } }`
 
-## 3. npm dependencies
-**None.** Static site, no build. The Vercel functions use the built-in `fetch` (Node 18+ runtime).
+Under the hood it calls the Wix Blog REST API and converts Wix's rich-content (Ricos)
+format into HTML. The page renders loading / empty / success / error states, so it stays
+friendly even before any posts exist or if Wix is briefly unreachable.
 
-## 4. Import path / where code lives
-- `api/posts.js` — NEW serverless proxy (blog read).
-- `api/lead.js` — EXISTING serverless proxy (contact create); update the extended-field key.
-- No bundler, no alias. Functions read `process.env.WIX_API_KEY` and `process.env.WIX_SITE_ID`.
+### Booking form — `book.html` → `api/lead.js`
+The form POSTs `{ firstName, lastName, email, phone, company, message }` to `/api/lead`,
+which creates a contact in the Wix CRM (`POST /contacts/v4/contacts`) with the message
+stored in the `Project Details` field. If the Wix env vars aren't set yet, the function
+still returns success and logs the lead so nothing is lost.
 
-## 5. Environment variables (set in the Vercel project, then redeploy)
-- `WIX_API_KEY` — **secret**, server-side only. Manage Contacts + Read Blog scopes. Never exposed to the browser.
-- `WIX_SITE_ID` — `a895c48f-6677-4005-994f-aa58f23d2206` (not secret).
+## Environment variables
 
-No `VITE_`-prefixed vars; nothing Wix-related ships in the browser bundle.
+Set both in the Vercel project (**Settings → Environment Variables**), then redeploy.
+A local template is in [`.env.example`](.env.example).
 
-## 6. Manual steps NOT done by this agent
-1. **Generate the API key** (only possible in the Wix dashboard): go to `https://manage.wix.com/account/api-keys`, create a key with **Manage Contacts** + **Read Blog** permissions (or "All account permissions") for the `Tropik Media` account/site.
-2. In **Vercel** → the tropik-media project → Settings → Environment Variables, add `WIX_API_KEY` (the key) and `WIX_SITE_ID` (`a895c48f-6677-4005-994f-aa58f23d2206`), then redeploy.
-3. (Optional) Add a **cover image** to the starter post and write the first real article in the Wix dashboard Blog editor.
+| Variable | Value | Notes |
+|---|---|---|
+| `WIX_API_KEY` | *(secret)* | API key with **Manage Contacts** + **Read Blog** scopes. Server-side only — never shipped to the browser. |
+| `WIX_SITE_ID` | `a895c48f-6677-4005-994f-aa58f23d2206` | Not secret. |
 
-Payments / custom domain: not applicable to this backend.
+### Generating the API key
+API keys can only be created from the Wix dashboard:
+
+1. Go to https://manage.wix.com/account/api-keys.
+2. Create a key for the **Tropik Media** account with **Manage Contacts** + **Read Blog**
+   permissions (or "All account permissions").
+3. Add `WIX_API_KEY` and `WIX_SITE_ID` to Vercel's environment variables and redeploy.
+
+That's the only step that can't be done from code. Everything else (the project, the Blog
+app, the contact field, the starter post) is already provisioned.
+
+## Dependencies
+
+**None.** No npm packages, no bundler. The Vercel functions use the built-in `fetch`
+(Node 18+ runtime).
+
+## Files
+
+- `api/posts.js` — blog read proxy (list + single post, Ricos → HTML).
+- `api/lead.js` — booking form → Wix contact.
+- `schema/collections.json` — machine-readable summary of the Wix setup above.
+- `.env.example` — environment variable template.
+
+## Reference docs
+- Create Contact — https://dev.wix.com/docs/rest/crm/contacts/contacts/create-contact
+- List Blog Posts — https://dev.wix.com/docs/api-reference/business-solutions/blog/posts-stats/list-posts
+- Get Post By Slug — https://dev.wix.com/docs/api-reference/business-solutions/blog/posts-stats/get-post-by-slug
+- Make API calls with an API key — https://dev.wix.com/docs/rest/articles/getting-started/api-keys
