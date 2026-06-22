@@ -1,5 +1,9 @@
 .vercel
 
+# Secrets — never commit
+.env
+.env.*
+
 # Source asset archives (not for deploy)
 *.zip
 _logos_extract/
