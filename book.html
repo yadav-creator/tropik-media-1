@@ -233,6 +233,43 @@
   .form-status.success { color: var(--yellow); display: block; }
   .form-status.error { color: #ff6b6b; display: block; }
 
+  /* success / thank-you state (shown after the form is hidden) */
+  .book-success {
+    background: var(--dark);
+    border: 1px solid rgba(245,196,0,0.12);
+    padding: 60px 44px;
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+    animation: book-success-in 0.45s ease both;
+  }
+  .book-success-check {
+    width: 70px; height: 70px;
+    margin: 0 auto 26px;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: var(--black);
+    font-size: 2.1rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .book-success-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 0.95;
+    color: var(--white);
+    margin-bottom: 16px;
+  }
+  .book-success-title .gold { color: var(--yellow); }
+  .book-success-text {
+    font-size: 0.95rem;
+    color: rgba(248,246,241,0.6);
+    line-height: 1.7;
+    max-width: 400px;
+    margin: 0 auto 32px;
+  }
+  @keyframes book-success-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+
   .book-back {
     display: inline-block;
     margin-top: 40px;
@@ -393,6 +430,13 @@
       <p class="form-status" id="lead-status"></p>
     </form>
 
+    <div class="book-success" id="lead-success" hidden>
+      <div class="book-success-check" aria-hidden="true">✓</div>
+      <h2 class="book-success-title">Request <span class="gold">Sent.</span></h2>
+      <p class="book-success-text">Thanks — we've got your details. Our team will be in touch within one business day.</p>
+      <a href="index.html" class="btn-primary book-success-btn">Back to Home</a>
+    </div>
+
     <a href="index.html" class="book-back">← Back to home</a>
   </div>
 </section>
@@ -444,8 +488,13 @@
 
       form.reset();
       form.style.display = 'none';
-      status.className = 'form-status success';
-      status.textContent = "Thanks — we've got your details and will be in touch within one business day.";
+      status.className = 'form-status';
+      status.textContent = '';
+      const backLink = document.querySelector('.book-back');
+      if (backLink) backLink.style.display = 'none';
+      const success = document.getElementById('lead-success');
+      success.hidden = false;
+      success.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (err) {
       status.className = 'form-status error';
       status.textContent = err.message;
